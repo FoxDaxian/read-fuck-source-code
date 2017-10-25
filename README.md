@@ -8,9 +8,7 @@ Hope has a good ending!!
 
 --------------------------------------------
 
-<div style="text-align: center;">
-    <img src="http://oqvlh6ipq.bkt.clouddn.com/fuck.png" alt="fuck" title="fuck">
-</div>
+<p align="center"><img src="http://oqvlh6ipq.bkt.clouddn.com/fuck.png"></p>
 
 --------------------------------------------
 

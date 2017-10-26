@@ -15,7 +15,7 @@ Hope has a good ending!!
 ### 不装逼了... (一边自己研究，一边参考别人，还有，当前underscore版本为: 1.8.3)
 
 
-- 基础属性，方法
+- <a href="./base.md">轮廓和基础</a>
 - 工具方法
 - 待扩展
 

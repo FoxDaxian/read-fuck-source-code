@@ -93,8 +93,12 @@
     // Internal function that returns an efficient (for current engines) version
     // of the passed-in callback, to be repeatedly applied in other Underscore
     // functions.
+
+    // 字面意思优化回调函数
     var optimizeCb = function(func, context, argCount) {
         if (context === void 0) return func;
+        // switch 中比较是 ===, 所以这里的case并不会触发，仅仅是忽略了，如果是 == 那么 null 等于 undefined
+        // call 比 apply 效率高哦
         switch (argCount) {
             case 1:
                 return function(value) {
@@ -117,37 +121,55 @@
         };
     };
 
+    // 内置的iteratee，用来判断 _.iteratee 是否被重写，闭包，外部获取不到，所以相当于const了
     var builtinIteratee;
 
     // An internal function to generate callbacks that can be applied to each
     // element in a collection, returning the desired result — either `identity`,
     // an arbitrary callback, a property matcher, or a property accessor.
+
+    // 无敌万能处理生成回调大法，反正就是不管value传什么，都尽量返回一个合理的回调
+    // 可以参考这里的解释: #https://juejin.im/entry/59b4a3295188257e7e1153ef
     var cb = function(value, context, argCount) {
+        // 如果 _.iteratee 不等于 builtinIteratee，说明 _.iteratee 被重写，调用被重写后的_.iteratee
         if (_.iteratee !== builtinIteratee) return _.iteratee(value, context);
+        // 如果value为空，那么_.identity，直接返回传入的参数
         if (value == null) return _.identity;
+        // 如果value是函数，那么返回被优化过的函数/迭代器
         if (_.isFunction(value)) return optimizeCb(value, context, argCount);
+        // 如果是对象 | 函数 并且 不是数组，那就返回一个函数，传入一个对象，返回的函数判断传入的对象是否包含attrs的键值对
+        // 这里传入函数也会被_.isObject判定为对象，不过会被之前的_.isFunction拦截
         if (_.isObject(value) && !_.isArray(value)) return _.matcher(value);
+        // 返回函数，参数为对象，返回  -> 对象[value]
         return _.property(value);
     };
 
     // External wrapper for our callback generator. Users may customize
     // `_.iteratee` if they want additional predicate/iteratee shorthand styles.
     // This abstraction hides the internal-only argCount argument.
+
+    // 将 _ 的iteratee 存在内置变量上，以供之后判断是否被用户重写
     _.iteratee = builtinIteratee = function(value, context) {
         return cb(value, context, Infinity);
     };
 
     // Similar to ES6's rest param (http://ariya.ofilabs.com/2013/03/es6-and-rest-parameter.html)
     // This accumulates the arguments passed into an array, after a given index.
+
+    // 将func的第startIndex函数之后的所有参数归为rest参数重新传入
     var restArgs = function(func, startIndex) {
+        // 如果startIndex为空，则替换为func的长度 - 1，因为数组从0开始，不为空则数字化
         startIndex = startIndex == null ? func.length - 1 : +startIndex;
         return function() {
+            // 返回函数传进来的参数个数 - 使用者设定的startIndex 并和0比较取最大值
             var length = Math.max(arguments.length - startIndex, 0),
                 rest = Array(length),
                 index = 0;
             for (; index < length; index++) {
+                // 塞满rest数组，rest内的为startIndex之后的所有参数
                 rest[index] = arguments[index + startIndex];
             }
+            // 如果startIndex小于3，那么使用call，还是因为call比apply快
             switch (startIndex) {
                 case 0:
                     return func.call(this, rest);
@@ -156,11 +178,15 @@
                 case 2:
                     return func.call(this, arguments[0], arguments[1], rest);
             }
+            // 大于2的时候就处理所有的参数，下面的+1是为了给rest留个位置
             var args = Array(startIndex + 1);
             for (index = 0; index < startIndex; index++) {
+                // 除了startIndex之外的，之前的位置按部就班
                 args[index] = arguments[index];
             }
+            // 放置rest
             args[startIndex] = rest;
+            // 调用apply，将所有参数传入
             return func.apply(this, args);
         };
     };
@@ -175,18 +201,24 @@
         return result;
     };
 
+    // 闭包，存储了可以，返回一个函数，接受一个obj，不为空则返回obj[key]
+    //  '浅获取'
     var shallowProperty = function(key) {
         return function(obj) {
             return obj == null ? void 0 : obj[key];
         };
     };
 
+    // 当path为数组，且长度为1的时候，返回obj对应的path[0]的值
     var deepGet = function(obj, path) {
         var length = path.length;
         for (var i = 0; i < length; i++) {
+            // 直接在一开始判断不就得了....
             if (obj == null) return void 0;
+            // 只有path是长度为1的数组的时候才行，不能再最上面判断长度么？大于1就直接返回 void 0
             obj = obj[path[i]];
         }
+        // 这里也在一开始直接判断了不好么....
         return length ? obj : void 0;
     };
 
@@ -1011,11 +1043,14 @@
     // ----------------
 
     // Keys in IE < 9 that won't be iterated by `for key in ...` and thus missed.
+
+    // 小于IE9的时候，对象重写 nonEnumerableProps数组 内的这些属性，会导致某些方法的结果改变，利用这一点来判断是否有问题
     var hasEnumBug = !{ toString: null }.propertyIsEnumerable('toString');
     var nonEnumerableProps = ['valueOf', 'isPrototypeOf', 'toString',
         'propertyIsEnumerable', 'hasOwnProperty', 'toLocaleString'
     ];
 
+    // 处理bug
     var collectNonEnumProps = function(obj, keys) {
         var nonEnumIdx = nonEnumerableProps.length;
         var constructor = obj.constructor;
@@ -1035,11 +1070,16 @@
 
     // Retrieve the names of an object's own properties.
     // Delegates to **ECMAScript 5**'s native `Object.keys`.
+
+    // 作用：返回object自身上的属性，不包括原型链
     _.keys = function(obj) {
+        // 如果不是对象，或者不是函数
         if (!_.isObject(obj)) return [];
+        // 原生支持就用原生的
         if (nativeKeys) return nativeKeys(obj);
         var keys = [];
         for (var key in obj)
+            // 如果obj(非prototype)上有key属性，那么添加到 keys 结果数组红
             if (_.has(obj, key)) keys.push(key);
         // Ahem, IE < 9.
         if (hasEnumBug) collectNonEnumProps(obj, keys);
@@ -1047,6 +1087,8 @@
     };
 
     // Retrieve all the property names of an object.
+
+    // 作用：返回object自身上的属性，包括原型链
     _.allKeys = function(obj) {
         if (!_.isObject(obj)) return [];
         var keys = [];
@@ -1114,17 +1156,24 @@
     };
 
     // An internal function for creating assigner functions.
+
+    // 内部创造一个指派者函数，第二个参数为空或者假，那么会覆盖旧对象中已有的属性
+    // keysFunc参数为_.keys/_.allKeys
     var createAssigner = function(keysFunc, defaults) {
         return function(obj) {
             var length = arguments.length;
+            // 确保一定为对象
             if (defaults) obj = Object(obj);
+            // 如果参数不匹配，则返回对象化的obj
             if (length < 2 || obj == null) return obj;
+            // 循环剩余参数
             for (var index = 1; index < length; index++) {
-                var source = arguments[index],
-                    keys = keysFunc(source),
+                var source = arguments[index], // 获取当前参数
+                    keys = keysFunc(source), // 获取当前参数的key组成的数组，根据keysFunc来决定包不包括原型链上的属性
                     l = keys.length;
                 for (var i = 0; i < l; i++) {
                     var key = keys[i];
+                    // 进行判断并填充或覆盖
                     if (!defaults || obj[key] === void 0) obj[key] = source[key];
                 }
             }
@@ -1193,6 +1242,8 @@
     });
 
     // Fill in a given object with default properties.
+
+    // 填充旧对象中没有，新对象中有的key
     _.defaults = createAssigner(_.allKeys, true);
 
     // Creates an object that inherits from the given prototype object.
@@ -1219,15 +1270,21 @@
     };
 
     // Returns whether an object has a given set of `key:value` pairs.
+
+    // _.matcher核心逻辑部分，判断是否包括键值对
     _.isMatch = function(object, attrs) {
         var keys = _.keys(attrs),
             length = keys.length;
+        // 如果object为空，那么根据attrs返回是否包括，如果为0，则包括，否则不包括
         if (object == null) return !length;
+        // 对象化
         var obj = Object(object);
         for (var i = 0; i < length; i++) {
             var key = keys[i];
+            // 先判断值相等与否，在判断key在不在obj上，否则 return false 直接for循环结束，跳出函数
             if (attrs[key] !== obj[key] || !(key in obj)) return false;
         }
+        // 返回true
         return true;
     };
 
@@ -1360,17 +1417,25 @@
 
     // Is a given value an array?
     // Delegates to ECMA5's native Array.isArray
+
+    // 如果原生支持Array.isArray就用不支持就用call
     _.isArray = nativeIsArray || function(obj) {
         return toString.call(obj) === '[object Array]';
     };
 
     // Is a given variable an object?
+
+    // 判断是否为对象，包括function和object
+    // 最后的!!obj，是对null做了处理
     _.isObject = function(obj) {
         var type = typeof obj;
         return type === 'function' || type === 'object' && !!obj;
     };
 
     // Add some isType methods: isArguments, isFunction, isString, isNumber, isDate, isRegExp, isError, isMap, isWeakMap, isSet, isWeakSet.
+
+    // 利用Object.prototype.toString.call(obj)的返回值，判断当前属于哪个类型
+    // 该步卸载比较靠上的位置，以便后面针对兼容性的重写某些判断方法
     _.each(['Arguments', 'Function', 'String', 'Number', 'Date', 'RegExp', 'Error', 'Symbol', 'Map', 'WeakMap', 'Set', 'WeakSet'], function(name) {
         _['is' + name] = function(obj) {
             return toString.call(obj) === '[object ' + name + ']';
@@ -1387,9 +1452,14 @@
 
     // Optimize `isFunction` if appropriate. Work around some typeof bugs in old v8,
     // IE 11 (#1621), Safari 8 (#1929), and PhantomJS (#2236).
+
+    // 这有有点问题吧？？？
     var nodelist = root.document && root.document.childNodes;
     if (typeof /./ != 'function' && typeof Int8Array != 'object' && typeof nodelist != 'function') {
         _.isFunction = function(obj) {
+            // 这最后的逻辑或跟一个false，有必要吗？
+            // 就这样吧，浏览器问题，没必要较真
+            // 看看这里：#https://stackoverflow.com/questions/38827169/underscore-js-why-does-isfunction-use-false
             return typeof obj == 'function' || false;
         };
     }
@@ -1421,10 +1491,14 @@
 
     // Shortcut function for checking if an object has a given property directly
     // on itself (in other words, not on a prototype).
+
+    // 判断obj上有没有path这个key，不包括obj.prototype上的
     _.has = function(obj, path) {
+        // 如果path不是数组，并且obj存在，则直接调用hasOwnProperty
         if (!_.isArray(path)) {
             return obj != null && hasOwnProperty.call(obj, path);
         }
+        // 如果是数组，则进行覆盖式判断
         var length = path.length;
         for (var i = 0; i < length; i++) {
             var key = path[i];
@@ -1447,6 +1521,8 @@
     };
 
     // Keep the identity function around for default iteratees.
+
+    // 默认的迭代器，返回被迭代的每一个值
     _.identity = function(value) {
         return value;
     };
@@ -1460,10 +1536,16 @@
 
     _.noop = function() {};
 
+
+    // 返回一个函数，接受一个参数，类型为Object，返回这个对象的[path]值
+    // 注意：obj[key]这里的key会执行toString方法，obj[[['name']]] => obj['name']
     _.property = function(path) {
+        // 如果不是数组
         if (!_.isArray(path)) {
+            // 返回的这个函数会获取有一个参数，这个参数需传入一个对象，并返回这个对象的ptah属性/方法
             return shallowProperty(path);
         }
+        // 是数组的情况下
         return function(obj) {
             return deepGet(obj, path);
         };
@@ -1481,6 +1563,8 @@
 
     // Returns a predicate for checking whether an object has a given set of
     // `key:value` pairs.
+
+    // 返回一个函数，传入一个对象，返回的函数判断传入的对象是否包含attrs的键值对
     _.matcher = _.matches = function(attrs) {
         attrs = _.extendOwn({}, attrs);
         return function(obj) {

@@ -9,7 +9,7 @@
 - 创建几个快速refer，提高访问速度，如```push```、```hasOwnProperty```等
 - 存储原生实现的一些方法，如```isArray```，以便后面判断及使用
 - 创建Ctor，一个干净的、无副作用的空函数，用来赋值prototype并创建实例以继承其他，最后清除指向
-- 创建一个适中返回underscore实例的方法，之后会为该方法的原型上添加underscore的各种方法，见underscore.own.js的```1687~1749```行
+- 创建一个适中返回underscore实例的方法，之后会为该方法的原型上添加underscore的各种方法，见underscore.own.js的```1687~1749```行的mixin方法，该方法也可以让使用者自己扩展underscore
 ```javascript
 var _ = function(obj) {
         // 如果当前对象是_的实例，那就返回

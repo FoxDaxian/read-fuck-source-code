@@ -14,6 +14,7 @@ Hope has a good ending!!
 
 ### 不装逼了... (一边自己研究，一边参考别人，还有，当前[underscore](http://www.css88.com/doc/underscore/#filter)版本为: 1.8.3)
 
+[underscore.own.js](./underscore.own.js)中有大量注释，或许那才是有用的吧....
 
 - <a href="./base.md">轮廓和基础</a>
 - <a href="./optimizeCbAndCb.md">```optimizeCb``` 与 ```cb```</a>

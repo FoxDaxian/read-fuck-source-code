@@ -245,6 +245,7 @@
     };
 
     // Collection Functions
+    // 集合方法部分
     // --------------------
 
     // The cornerstone, an `each` implementation, aka `forEach`.

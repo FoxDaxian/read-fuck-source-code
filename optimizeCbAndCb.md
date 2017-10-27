@@ -62,7 +62,7 @@ var optimizeCb = function(func, context, argCount) {
  * @return Function          被无敌万能处理生成回调大法处理好的回调函数
  */
 var cb = function(value, context, argCount) {
-    // 这里的作用是为了让用户可以自定义_.iteratee，这里不做过多解释
+    // 这里的作用是为了让用户可以自定义_.iteratee，不做过多解释
     if (_.iteratee !== builtinIteratee) return _.iteratee(value, context);
     // 如果value为空，那么_.identity =>直接返回传入的参数
     if (value == null) return _.identity;

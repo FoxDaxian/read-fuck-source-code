@@ -12,12 +12,16 @@ Hope has a good ending!!
 
 --------------------------------------------
 
-### 不装逼了... (一边自己研究，一边参考别人，还有，当前underscore版本为: 1.8.3)
+### 不装逼了... (一边自己研究，一边参考别人，还有，当前[underscore](http://www.css88.com/doc/underscore/#filter)版本为: 1.8.3)
 
 
 - <a href="./base.md">轮廓和基础</a>
 - <a href="./optimizeCbAndCb.md">```optimizeCb``` 与 ```cb```</a>
-- 待扩展
+- <a href="./utils.md">我觉得他是个工具，那他就是工具(工具方法</a>
+- Collection Functions
+- Array Functions
+- Function (ahem) Functions
+- Object Functions
 
 
 

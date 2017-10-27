@@ -192,16 +192,22 @@
     };
 
     // An internal function for creating a new object that inherits from another.
+
+    // 创建一个继承自prototype的对象
     var baseCreate = function(prototype) {
+        // 如果prototype不是对象，返回一个空对象
         if (!_.isObject(prototype)) return {};
+        // 如果原生支持Object.create，则调用
         if (nativeCreate) return nativeCreate(prototype);
+        // 利用'代孕'构造函数，制作一个继承自prototype的对象
         Ctor.prototype = prototype;
         var result = new Ctor;
+        // 手动释放内存，cause闭包引用
         Ctor.prototype = null;
         return result;
     };
 
-    // 闭包，存储了可以，返回一个函数，接受一个obj，不为空则返回obj[key]
+    // 闭包，存储了key，返回一个函数，接受一个obj，不为空则返回obj[key]
     //  '浅获取'
     var shallowProperty = function(key) {
         return function(obj) {
@@ -226,8 +232,13 @@
     // should be iterated as an array or as an object.
     // Related: http://people.mozilla.org/~jorendorff/es6-draft.html#sec-tolength
     // Avoids a very nasty iOS 8 JIT bug on ARM-64. #2094
+
+
+    // Math.pow(2, 53) - 1 是 JavaScript 中能精确表示的最大数字
     var MAX_ARRAY_INDEX = Math.pow(2, 53) - 1;
+    // 返回一个获取参数(likeArrayList)的.length的函数
     var getLength = shallowProperty('length');
+    // 判断是否是类数组集合，根据length判断
     var isArrayLike = function(collection) {
         var length = getLength(collection);
         return typeof length == 'number' && length >= 0 && length <= MAX_ARRAY_INDEX;
@@ -239,19 +250,26 @@
     // The cornerstone, an `each` implementation, aka `forEach`.
     // Handles raw objects in addition to array-likes. Treats all
     // sparse array-likes as if they were dense.
+
+    // 就相当于forEach
     _.each = _.forEach = function(obj, iteratee, context) {
+        // 当context未定义的时候，直接返回iteratee，否则返回绑定到context的函数
         iteratee = optimizeCb(iteratee, context);
         var i, length;
+        // 如果是数组，就正常for循环，并将数组的每一组传入
+        // iteratee（el, i, list）参数，这就是为啥forEach这种可以获取当前元素，当前索引，被迭代的循环的原因
         if (isArrayLike(obj)) {
             for (i = 0, length = obj.length; i < length; i++) {
                 iteratee(obj[i], i, obj);
             }
+        // 如果不是类数组对象，那么获取obj的所有键值，然后和以上同理
         } else {
             var keys = _.keys(obj);
             for (i = 0, length = keys.length; i < length; i++) {
                 iteratee(obj[keys[i]], keys[i], obj);
             }
         }
+        // 这个或许为了链式调用吧
         return obj;
     };
 
@@ -1136,6 +1154,9 @@
     };
 
     // Invert the keys and values of an object. The values must be serializable.
+
+    // 倒置对象的键值对
+    // 如果有值相同的key，那么后面的会覆盖前面的
     _.invert = function(obj) {
         var result = {};
         var keys = _.keys(obj);
@@ -1511,10 +1532,13 @@
     };
 
     // Utility Functions
+    // 工具方法部分
     // -----------------
 
     // Run Underscore.js in *noConflict* mode, returning the `_` variable to its
     // previous owner. Returns a reference to the Underscore object.
+
+    // 解放_变量，如果使用underscore之前_已经被占用，那么只是此方法，返回_构造函数
     _.noConflict = function() {
         root._ = previousUnderscore;
         return this;
@@ -1528,12 +1552,15 @@
     };
 
     // Predicate-generating functions. Often useful outside of Underscore.
+
+    // 相当于const
     _.constant = function(value) {
         return function() {
             return value;
         };
     };
 
+    // 始终返回undefiend
     _.noop = function() {};
 
 
@@ -1552,10 +1579,15 @@
     };
 
     // Generates a function for a given object that returns a given property.
+
+    // 仅仅能用于对象，返回一个获取obj指定属性的方法
     _.propertyOf = function(obj) {
+        // 如果obj未定义，那么如论如何都返回undefined
         if (obj == null) {
-            return function() {};
+            // 这里是否不用再创建一个，而是用_.noop
+            return _.noop;
         }
+        // 如果obj是对象的话，判断key(path)是否为数组，不是直接obj[path]，否则调用deepGet
         return function(path) {
             return !_.isArray(path) ? obj[path] : deepGet(obj, path);
         };
@@ -1573,28 +1605,40 @@
     };
 
     // Run a function **n** times.
+
+    // 指定迭代函数n次，并可以指定迭代函数的上下文
     _.times = function(n, iteratee, context) {
+        // 至少为0次
         var accum = Array(Math.max(0, n));
+        // 优化回调函数
         iteratee = optimizeCb(iteratee, context, 1);
+        // 执行
         for (var i = 0; i < n; i++) accum[i] = iteratee(i);
         return accum;
     };
 
     // Return a random integer between min and max (inclusive).
+
+    // 获取包含min和max的随机数，至少传入一个大于等于0的参数
     _.random = function(min, max) {
         if (max == null) {
             max = min;
             min = 0;
         }
+        // 就是利用Math.random
         return min + Math.floor(Math.random() * (max - min + 1));
     };
 
     // A (possibly faster) way to get the current timestamp as an integer.
+
+    // 时间戳
     _.now = Date.now || function() {
         return new Date().getTime();
     };
 
     // List of HTML entities for escaping.
+
+    // 用于转义的HTML实体列表
     var escapeMap = {
         '&': '&amp;',
         '<': '&lt;',
@@ -1603,6 +1647,7 @@
         "'": '&#x27;',
         '`': '&#x60;'
     };
+    // 用于反转义的HTML实体列表
     var unescapeMap = _.invert(escapeMap);
 
     // Functions for escaping and unescaping strings to/from HTML interpolation.
@@ -1611,6 +1656,8 @@
             return map[match];
         };
         // Regexes for identifying a key that needs to be escaped.
+
+        // 生成正则正向查找
         var source = '(?:' + _.keys(map).join('|') + ')';
         var testRegexp = RegExp(source);
         var replaceRegexp = RegExp(source, 'g');
@@ -1619,24 +1666,37 @@
             return testRegexp.test(string) ? string.replace(replaceRegexp, escaper) : string;
         };
     };
+
+    // 转移成字符串实体，以免XSS攻击
     _.escape = createEscaper(escapeMap);
+    // 反转译
     _.unescape = createEscaper(unescapeMap);
 
     // Traverses the children of `obj` along `path`. If a child is a function, it
     // is invoked with its parent as context. Returns the value of the final
     // child, or `fallback` if any child is undefined.
+
+    // 返回对象存在的结果或者用户最终想要的结果
+    // 我感觉有点多余啊
     _.result = function(obj, path, fallback) {
+        // 判断path是否为数组，强制转换为数组
         if (!_.isArray(path)) path = [path];
+        // 获取转换后的path的数组
         var length = path.length;
+        // 如果path长度为0，判断callback是否是函数，如果是call(obj)，否则返回fallback
         if (!length) {
             return _.isFunction(fallback) ? fallback.call(obj) : fallback;
         }
         for (var i = 0; i < length; i++) {
+            // 如果obj未定义，则prop为undefined，否则prop为obj[path[i]]
             var prop = obj == null ? void 0 : obj[path[i]];
+            // 如果prop为空，那么prop为fallback
             if (prop === void 0) {
                 prop = fallback;
+                // 用于跳出for循环，如果使用break，下面的（obj = _.isFunction(prop) ? prop.call(obj) : prop;）还需要放在这里面运行一边重复了
                 i = length; // Ensure we don't continue iterating.
             }
+            // obj被重写了
             obj = _.isFunction(prop) ? prop.call(obj) : prop;
         }
         return obj;
@@ -1644,12 +1704,15 @@
 
     // Generate a unique integer id (unique within the entire client session).
     // Useful for temporary DOM ids.
+
+    // 生成唯一ID，闭包原理，可带前缀，DOM ids 中较有用
     var idCounter = 0;
     _.uniqueId = function(prefix) {
         var id = ++idCounter + '';
         return prefix ? prefix + id : id;
     };
 
+    // 以下为template所用到的
     // By default, Underscore uses ERB-style template delimiters, change the
     // following template settings to use alternative delimiters.
     _.templateSettings = {

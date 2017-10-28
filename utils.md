@@ -27,7 +27,7 @@
 - ```unescape()```：反转译
 - ```result(obj, key, defaultValue)```：如果obj[key]存在则返回或者调用，否则返回defaultValue。当key为空数组时，defaultValue为函数时.call(obj)，否则返回defaultValue
 - ```uniqueId(prefix)```：返回唯一id，可附加前缀，常用于DOM的ID
-- ```template(text, settings, oldSettings)```: 待补充
+- ```template(text, settings, oldSettings)```: 生成模板的函数..
 
 
 

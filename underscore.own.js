@@ -275,12 +275,19 @@
     };
 
     // Return the results of applying the iteratee to each element.
+
+    // 迭代集合中每个元素并调用iteratee，返回一个处理后的新的数组
     _.map = _.collect = function(obj, iteratee, context) {
+        // 优化迭代器
         iteratee = cb(iteratee, context);
+        // 如果不是数组，那么返回key的数组，如果是数组，返回false
         var keys = !isArrayLike(obj) && _.keys(obj),
+            // 获取obj的长度
             length = (keys || obj).length,
+            // 预先定义数组长度，提高性能，以免循环的时候每次都先设置长度，再设置值
             results = Array(length);
         for (var index = 0; index < length; index++) {
+            // 数组就是false,不然就是对象
             var currentKey = keys ? keys[index] : index;
             results[index] = iteratee(obj[currentKey], currentKey, obj);
         }
@@ -288,14 +295,22 @@
     };
 
     // Create a reducing function iterating left or right.
+
+    // 创建一个可左可右的reduce工厂函数
     var createReduce = function(dir) {
         // Wrap code that reassigns argument variables in a separate function than
         // the one that accesses `arguments.length` to avoid a perf hit. (#1991)
+
+
         var reducer = function(obj, iteratee, memo, initial) {
+            // 分类 && 根据dir分类
             var keys = !isArrayLike(obj) && _.keys(obj),
                 length = (keys || obj).length,
                 index = dir > 0 ? 0 : length - 1;
+            // 如果reduce参数长度大于等于3，那么为false，否则为true
+            // 进去的话，就说明没有初始值，那么设置初始值为obj的第一个value，然后改变index，再用下面的for循环
             if (!initial) {
+                // 设置memo初始值
                 memo = obj[keys ? keys[index] : index];
                 index += dir;
             }
@@ -303,10 +318,12 @@
                 var currentKey = keys ? keys[index] : index;
                 memo = iteratee(memo, obj[currentKey], currentKey, obj);
             }
+            // 返回sum
             return memo;
         };
 
         return function(obj, iteratee, memo, context) {
+            // 如果参数长度大于等于3，那么说明传入了初始值
             var initial = arguments.length >= 3;
             return reducer(obj, optimizeCb(iteratee, context, 4), memo, initial);
         };
@@ -314,23 +331,37 @@
 
     // **Reduce** builds up a single result from a list of values, aka `inject`,
     // or `foldl`.
+
+    // 正向reduce
     _.reduce = _.foldl = _.inject = createReduce(1);
 
     // The right-associative version of reduce, also known as `foldr`.
+
+    // 反向reduce
     _.reduceRight = _.foldr = createReduce(-1);
 
     // Return the first value which passes a truth test. Aliased as `detect`.
+
+    // 寻找/检测，返回第一个通过测试的值
     _.find = _.detect = function(obj, predicate, context) {
+        // 根据类型获取处理OBJ的对应方法
         var keyFinder = isArrayLike(obj) ? _.findIndex : _.findKey;
+        // 测试
         var key = keyFinder(obj, predicate, context);
+        // 有的话就返回
         if (key !== void 0 && key !== -1) return obj[key];
     };
 
     // Return all the elements that pass a truth test.
     // Aliased as `select`.
+
+    // 返回所有通过测试的值
     _.filter = _.select = function(obj, predicate, context) {
+        // 结果集合
         var results = [];
+        // 大法
         predicate = cb(predicate, context);
+        // 遍历，通过则吧返回值添加到结果中
         _.each(obj, function(value, index, list) {
             if (predicate(value, index, list)) results.push(value);
         });
@@ -338,6 +369,8 @@
     };
 
     // Return all the elements for which a truth test fails.
+
+    // 和filter相反
     _.reject = function(obj, predicate, context) {
         return _.filter(obj, _.negate(cb(predicate)), context);
     };
@@ -756,6 +789,8 @@
     };
 
     // Returns the first index on an array-like that passes a predicate test.
+
+    // 找到第一个通过测试的值得索引，正向开始找和反向开始找，返回的索引都是正向开始算的
     _.findIndex = createPredicateIndexFinder(1);
     _.findLastIndex = createPredicateIndexFinder(-1);
 
@@ -1012,6 +1047,8 @@
     };
 
     // Returns a negated version of the passed-in predicate.
+
+    // 返回一个predicate相反的版本
     _.negate = function(predicate) {
         return function() {
             return !predicate.apply(this, arguments);
@@ -1204,15 +1241,23 @@
     };
 
     // Extend a given object with all the properties in passed-in object(s).
+
+    // 参数为所有的allKeys，包含原型链上的
     _.extend = createAssigner(_.allKeys);
 
     // Assigns a given object with all the own properties in the passed-in object(s).
     // (https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Object/assign)
+
+    // 参数为所有的keys，不包括原型链上的
     _.extendOwn = _.assign = createAssigner(_.keys);
 
     // Returns the first key on an object that passes a predicate test.
+
+    // 找到一个通过测试的object的值对应的key
     _.findKey = function(obj, predicate, context) {
+        // 无敌处理产生回调函数大法
         predicate = cb(predicate, context);
+        // 获取obj上所有的key，不包括原型链上的
         var keys = _.keys(obj),
             key;
         for (var i = 0, length = keys.length; i < length; i++) {
@@ -1716,19 +1761,30 @@
     // 以下为template所用到的
     // By default, Underscore uses ERB-style template delimiters, change the
     // following template settings to use alternative delimiters.
+
+    // 三种解析模板，自定义
     _.templateSettings = {
+        // 解析javascript
         evaluate: /<%([\s\S]+?)%>/g,
+        // 解析变量
         interpolate: /<%=([\s\S]+?)%>/g,
+        // 对HTML进行转译
         escape: /<%-([\s\S]+?)%>/g
     };
 
     // When customizing `templateSettings`, if you don't want to define an
     // interpolation, evaluation or escaping regex, we need one that is
     // guaranteed not to match.
+
+    // 如果解析模板未定义，则取下面这个
+    // 该正则什么都不匹配
+    // 原理应该是^匹配开头的，然后前面加上任意一个字符串之类的，就导致什么都不匹配了...
     var noMatch = /(.)^/;
 
     // Certain characters need to be escaped so that they can be put into a
     // string literal.
+
+    // 定义特殊功能的字符，以便可以被运用到模板的字符串变量中
     var escapes = {
         "'": "'",
         '\\': '\\',
@@ -1738,8 +1794,17 @@
         '\u2029': 'u2029'
     };
 
+    // 正则
     var escapeRegExp = /\\|'|\r|\n|\u2028|\u2029/g;
 
+    /**
+        '      => \\'
+        \\     => \\\\
+        \r     => \\r
+        \n     => \\n
+        \u2028 => \\u2028
+        \u2029 => \\u2029
+    **/
     var escapeChar = function(match) {
         return '\\' + escapes[match];
     };
@@ -1749,10 +1814,14 @@
     // and correctly escapes quotes within interpolated code.
     // NB: `oldSettings` only exists for backwards compatibility.
     _.template = function(text, settings, oldSettings) {
+        // 矫正模板配置
         if (!settings && oldSettings) settings = oldSettings;
+        // 将settings,和_.templateSettings赋值到新的{}中
         settings = _.defaults({}, settings, _.templateSettings);
 
         // Combine delimiters into one regular expression via alternation.
+
+        // 将不同的模板整合到一个正则上
         var matcher = RegExp([
             (settings.escape || noMatch).source,
             (settings.interpolate || noMatch).source,
@@ -1761,6 +1830,7 @@
 
         // Compile the template source, escaping string literals appropriately.
         var index = 0;
+        // source用来保存最终的函数执行体
         var source = "__p+='";
         text.replace(matcher, function(match, escape, interpolate, evaluate, offset) {
             source += text.slice(index, offset).replace(escapeRegExp, escapeChar);
@@ -1780,6 +1850,9 @@
         source += "';\n";
 
         // If a variable is not specified, place data values in local scope.
+
+        // with 参考：#http://luopq.com/2016/02/14/js-with-keyword/
+        // 如果没有指定settings，则使用 with，但是性能会下降，因为JS不会预解析
         if (!settings.variable) source = 'with(obj||{}){\n' + source + '}\n';
 
         source = "var __t,__p='',__j=Array.prototype.join," +

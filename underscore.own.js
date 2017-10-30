@@ -267,7 +267,7 @@
             for (i = 0, length = obj.length; i < length; i++) {
                 iteratee(obj[i], i, obj);
             }
-        // 如果不是类数组对象，那么获取obj的所有键值，然后和以上同理
+            // 如果不是类数组对象，那么获取obj的所有键值，然后和以上同理
         } else {
             var keys = _.keys(obj);
             for (i = 0, length = keys.length; i < length; i++) {
@@ -430,7 +430,7 @@
         // 如果是函数
         if (_.isFunction(path)) {
             func = path;
-        // 如果是数组
+            // 如果是数组
         } else if (_.isArray(path)) {
             // 获取除最后一个的所有，返回一个数组
             contextPath = path.slice(0, -1);
@@ -804,7 +804,7 @@
                 // 如果第一个元素 || seen 不等于 computed
                 if (!i || seen !== computed) result.push(value);
                 seen = computed;
-            // 如果有迭代器
+                // 如果有迭代器
             } else if (iteratee) {
                 // 判断seen中有没有结果，没有才push
                 if (!_.contains(seen, computed)) {
@@ -813,7 +813,7 @@
                     // push到结果数组
                     result.push(value);
                 }
-            // 直接判断有没有
+                // 直接判断有没有
             } else if (!_.contains(result, value)) {
                 result.push(value);
             }
@@ -904,7 +904,7 @@
             // list[i]为key，values[i]为value
             if (values) {
                 result[list[i]] = values[i];
-            // 只传入二维数组的时候，[0]为key，[1]为value
+                // 只传入二维数组的时候，[0]为key，[1]为value
             } else {
                 result[list[i][0]] = list[i][1];
             }
@@ -941,8 +941,11 @@
     // an object should be inserted so as to maintain order. Uses binary search.
 
     // 二分查找的核心逻辑部分，动手试试这个二分是如何运作的
+    // 该方法不允许有NaN，因为NaN无法和任何数字做比较
+    // 补充医疗保险来写一些关于NaN的小tips，还有二分算法的只是，补充一下自己的算法知识
+    // TODO这里+二分算法
     _.sortedIndex = function(array, obj, iteratee, context) {
-        // 生成迭代器，仅有一个value参数
+        // 生成迭代器，仅有一个value参数，这里iteratee为空，所以返回identity，直接返回value
         iteratee = cb(iteratee, context, 1);
         // 返回obj的值
         var value = iteratee(obj);
@@ -950,8 +953,13 @@
             high = getLength(array);
         while (low < high) {
             var mid = Math.floor((low + high) / 2);
+            console.log(mid, 'mid')
+            console.log(iteratee(array[mid]), 'iteratee(array[mid])')
             if (iteratee(array[mid]) < value) low = mid + 1;
             else high = mid;
+            console.log(low, 'low')
+            console.log(high, 'high')
+            console.log('---------------');
         }
         return low;
     };
@@ -960,27 +968,50 @@
 
     // 生成一个创造indexOf/lastIndexOf的函数
     var createIndexFinder = function(dir, predicateFind, sortedIndex) {
+        // idx会被赋上找到的item的索引，并作为结果返回
         return function(array, item, idx) {
             var i = 0,
-                // 获取 array 的长度
-                length = getLength(array);
+                length = getLength(array); // 获取 array 的长度
+
+            // 如果idx是数字，那么进入该if
+            // idx为从哪里开始找
             if (typeof idx == 'number') {
+                // 根据查找方向走
                 if (dir > 0) {
+                    // 如果idx大于等于0，那么i = idx
+                    // 否则取idx + length 和 i 中较大的一个
+                    // i位起始位置，也就是从哪里开始找
                     i = idx >= 0 ? idx : Math.max(idx + length, i);
                 } else {
+                    // 重新设置length
+                    // 如果idx大于等于0，那么取idx + 1和length中较小的一个值
+                    // 否则取idx + length + 1
+                    // 因为idx是数组的下标，所以数组的长度为当前下标 + 1，所以需要 + 1
                     length = idx >= 0 ? Math.min(idx + 1, length) : idx + length + 1;
                 }
+            // 如果 idx 为Number以外的类型的时候
+            // 如果 sortedIndex、idx、length都存在，则进入该if
             } else if (sortedIndex && idx && length) {
+                // 这里用到了上面的sortedIndex，但是只传了两个参数，所以iteratee为_.identity，直接返回value
+                // 不能处理任何有NaN的情况，因为NaN无法比大小
                 idx = sortedIndex(array, item);
+                // 判断返回的值是否与用户指定的item相同，是的话返回idx，也就是正确的位置，否则返回-1
                 return array[idx] === item ? idx : -1;
             }
+
+            // 用于处理array中含有NaN，并且item为NaN的特殊情况
             if (item !== item) {
+                // 这里的predicateFind参数，使用_.findIndex或者_.findLastIndex
+                // 因为这两个函数是找满足断言的第一个值，并且内置了NaN情况的处理方法，所以传入_.isNaN
                 idx = predicateFind(slice.call(array, i, length), _.isNaN);
+                // slice会返回第i个到length个，所以需要加上i才是真正的idx
                 return idx >= 0 ? idx + i : -1;
             }
+            // 直接用for循环去找索引值
             for (idx = dir > 0 ? i : length - 1; idx >= 0 && idx < length; idx += dir) {
                 if (array[idx] === item) return idx;
             }
+            // 都没有就返回-1啦
             return -1;
         };
     };

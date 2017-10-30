@@ -20,7 +20,7 @@ Hope has a good ending!!
 - <a href="./optimizeCbAndCb.md">```optimizeCb``` 与 ```cb```</a>
 - <a href="./utils.md">我觉得他是个工具，那他就是工具(工具方法</a>
 - <a href="./collections.md">Collection Functions</a>
-- Array Functions
+- <a href="./array.md">Array Functions</a>
 - Function (ahem) Functions
 - Object Functions
 

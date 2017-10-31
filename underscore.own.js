@@ -1358,12 +1358,15 @@
     // Returns a function that is the composition of a list of functions, each
     // consuming the return value of the function that follows.
 
-    // 
+    // 倒序，从最后一个方法开始，每一个方法的返回值作为接下来函数的参数传入，并最终返回第一个函数的结果
     _.compose = function() {
+        // 获取参数
         var args = arguments;
+        // 获取args最后一个元素的索引
         var start = args.length - 1;
         return function() {
             var i = start;
+            // 第一个开始的函数（最后一个函数）可以获取参数
             var result = args[start].apply(this, arguments);
             while (i--) result = args[i].call(this, result);
             return result;
@@ -1371,6 +1374,8 @@
     };
 
     // Returns a function that will only be executed on and after the Nth call.
+
+    // 几次之后才调用
     _.after = function(times, func) {
         return function() {
             if (--times < 1) {
@@ -1380,12 +1385,16 @@
     };
 
     // Returns a function that will only be executed up to (but not including) the Nth call.
+
+    // times次之前能调用
     _.before = function(times, func) {
+        // 闭包，存储之前函数的返回值，即使超过times次之后，也能得到最后一次执行的结果
         var memo;
         return function() {
             if (--times > 0) {
                 memo = func.apply(this, arguments);
             }
+            // 清除不用的变量，防止内存泄漏..
             if (times <= 1) func = null;
             return memo;
         };
@@ -1393,8 +1402,11 @@
 
     // Returns a function that will be executed at most one time, no matter how
     // often you call it. Useful for lazy initialization.
+
+    // 只调用一次，借用_.partial，传递_.before第一个参数，如果_.before参数相反，则可以传递_占位，例如(_, 2)
     _.once = _.partial(_.before, 2);
 
+    // 重构函数剩余参数方法
     _.restArgs = restArgs;
 
     // -------------------------------------------------------------------------------------

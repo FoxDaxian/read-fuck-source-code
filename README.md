@@ -21,7 +21,7 @@ Hope has a good ending!!
 - <a href="./utils.md">我觉得他是个工具，那他就是工具(工具方法</a>
 - <a href="./collections.md">Collection Functions</a>
 - <a href="./array.md">Array Functions</a>
-- Function (ahem) Functions
+- <a href="./functions.md">Function (ahem) Functions</a>
 - Object Functions
 
 

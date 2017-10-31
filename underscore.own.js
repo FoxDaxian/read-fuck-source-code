@@ -736,6 +736,7 @@
     // Internal implementation of a recursive `flatten` function.
 
     // 内部扁平化数组方法
+    // strict 通常配合shallow一起使用，
     var flatten = function(input, shallow, strict, output) {
         output = output || [];
         var idx = output.length;
@@ -755,6 +756,7 @@
                     // 递归之后output长度改变，所以idx需要重新赋值
                     idx = output.length;
                 }
+            // 允不允许将非数组的值，添加到结果数组中
             } else if (!strict) {
                 // 直接复制
                 output[idx++] = value;
@@ -859,7 +861,7 @@
     // Take the difference between one array and a number of other arrays.
     // Only the elements present in just the first array will remain.
 
-    // 取数组中的不同，只保留第一个数组的值
+    // 取数组中的不同，只保留第一个数组的值 =>  取非
     // rest化参数
     _.difference = restArgs(function(array, rest) {
         // 扁平化数组
@@ -940,10 +942,14 @@
     // Use a comparator function to figure out the smallest index at which
     // an object should be inserted so as to maintain order. Uses binary search.
 
-    // 二分查找的核心逻辑部分，动手试试这个二分是如何运作的
+    // 找obj在 array的位置 
     // 该方法不允许有NaN，因为NaN无法和任何数字做比较
-    // 补充医疗保险来写一些关于NaN的小tips，还有二分算法的只是，补充一下自己的算法知识
-    // TODO这里+二分算法
+    // 
+    // 前提：数组为有序
+    // 优点：查找参数少，查找速度快
+    // 缺点：要求待查表为有序表
+    // 思路：先找重点位置，与aim比，等于则直接返回，大于取前半部分，小于取后半部分
+    // 循环以上操作，下面的二分是一个变种
     _.sortedIndex = function(array, obj, iteratee, context) {
         // 生成迭代器，仅有一个value参数，这里iteratee为空，所以返回identity，直接返回value
         iteratee = cb(iteratee, context, 1);
@@ -951,15 +957,13 @@
         var value = iteratee(obj);
         var low = 0,
             high = getLength(array);
+
+        // 变种的二分算法的核心逻辑
+        // 不是找相等
         while (low < high) {
             var mid = Math.floor((low + high) / 2);
-            console.log(mid, 'mid')
-            console.log(iteratee(array[mid]), 'iteratee(array[mid])')
             if (iteratee(array[mid]) < value) low = mid + 1;
             else high = mid;
-            console.log(low, 'low')
-            console.log(high, 'high')
-            console.log('---------------');
         }
         return low;
     };
@@ -1021,13 +1025,17 @@
     // If the array is large and already in sort order, pass `true`
     // for **isSorted** to use binary search.
 
-    // 
+    // 找item在array所在的索引，没有则返回-1
+    // 上面英文注释说传入一个 true 来启动二分排序，其实不严谨除了Number，和转换成布尔值为false的值都可以比如一个空函数
     _.indexOf = createIndexFinder(1, _.findIndex, _.sortedIndex);
+    // 这里为什么不给一个sortedIndex呢？因为需要又需要改一个变种，所以太麻烦了？
     _.lastIndexOf = createIndexFinder(-1, _.findLastIndex);
 
     // Generate an integer Array containing an arithmetic progression. A port of
     // the native Python `range()` function. See
     // [the Python documentation](http://docs.python.org/library/functions.html#range).
+
+    // 返回每step(0)一个元素的数组
     _.range = function(start, stop, step) {
         if (stop == null) {
             stop = start || 0;
@@ -1049,6 +1057,8 @@
 
     // Split an **array** into several arrays containing **count** or less elements
     // of initial array.
+
+    // 分成几块，默认返回[]
     _.chunk = function(array, count) {
         if (count == null || count < 1) return [];
 
@@ -1071,20 +1081,48 @@
 
     // Determines whether to execute a function as a constructor
     // or a normal function with the provided arguments.
+
+    // 确认是以构造函数执行还是普通函数
+    // 
+    // 补充医疗保险： instanceof 深入剖析，可以参考这个：
+    // #https://www.ibm.com/developerworks/cn/web/1306_jiangjj_jsinstanceof/index.html
+    // #http://www.cnblogs.com/fool/archive/2010/10/14/1850910.html
+    // 
+    // instanceof检测对象A的__proto__在不在B的prototype上，在类似递归那样一直在原型链上寻找
+    // 注意：当构造函数的 prototype 为 null 的时候，实例对象 instanceof 构造函数会报错
+    //
+    // 区分new / 非new
+    // new的情况模拟new的流程
+    // 非new的时候直接apply
     var executeBound = function(sourceFunc, boundFunc, context, callingContext, args) {
+        // 如果执行时候的环境上下文是bounFunc的实例，那么直接返回
+        // 根据执行时候this(callingContext)的指向判断是否为是new操作
+        // 其实也就是非new的情况下，因为调用函数的时候，new才会使 this 指向当前函数
         if (!(callingContext instanceof boundFunc)) return sourceFunc.apply(context, args);
+        // new 的情况下
+        // 创造一个继承自sourceFunc.prototype的对象
         var self = baseCreate(sourceFunc.prototype);
+        // sourceFunc 指定 this 为 self 执行
+        // 因为指定sourceFunc的this指向self，所以self内的值指定的this.xx会被改变
         var result = sourceFunc.apply(self, args);
+        // 如果返回的值是个对象，就会覆盖new操作返回的对象，所以直接返回result，否则，返回 self，这个才是new流程走下来的结果，可参考下面链接
+        // 参考链接：#http://www.cnblogs.com/zichi/p/4392944.html
         if (_.isObject(result)) return result;
+        // 返回创造的原型链为 sourceFunc.prototype 的对象
         return self;
     };
 
     // Create a function bound to a given object (assigning `this`, and arguments,
     // optionally). Delegates to **ECMAScript 5**'s native `Function.bind` if
     // available.
+
+    // 扩展函数参数，实现一个bind
     _.bind = restArgs(function(func, context, args) {
+        // 如果func不是函数，报错
         if (!_.isFunction(func)) throw new TypeError('Bind must be called on a function');
+        // 返回一个处理过参数的函数
         var bound = restArgs(function(callArgs) {
+            // 理解这个函数executeBound，要求对new稍微熟悉
             return executeBound(func, bound, context, this, args.concat(callArgs));
         });
         return bound;
@@ -1094,30 +1132,46 @@
     // arguments pre-filled, without changing its dynamic `this` context. _ acts
     // as a placeholder by default, allowing any combination of arguments to be
     // pre-filled. Set `_.partial.placeholder` for a custom placeholder argument.
+
+    // 可以预设函数的部分参数，通过传入_忽略某个参数
+    // 将第二个参数（包括）之后的所有参数'存到'boundArgs里
     _.partial = restArgs(function(func, boundArgs) {
+        // 占位符 = -
         var placeholder = _.partial.placeholder;
         var bound = function() {
+            // position用来判断参数
             var position = 0,
                 length = boundArgs.length;
             var args = Array(length);
+
             for (var i = 0; i < length; i++) {
+                // 如果boundArgs为placeholder，那么获取当前bound的第position个参数
+                // 否则，就获取boundArgs[i]
+                // 如果boundArgs为_，则不获取，转而获取返回函数的第position个参数，否则，就获取boundArgs[i]这个参数
                 args[i] = boundArgs[i] === placeholder ? arguments[position++] : boundArgs[i];
             }
+            // 如果不足，则把剩余参数传进去，只是处理剩余函数
             while (position < arguments.length) args.push(arguments[position++]);
+            // 绑定
             return executeBound(func, bound, this, this, args);
         };
         return bound;
     });
-
+    // 上面用到
     _.partial.placeholder = _;
 
     // Bind a number of an object's methods to that object. Remaining arguments
     // are the method names to be bound. Useful for ensuring that all callbacks
     // defined on an object belong to it.
+
+    // 将obj中的某几个函数永久绑定在obj上
     _.bindAll = restArgs(function(obj, keys) {
+        // 数组扁平化，非浅层，变成数组了
         keys = flatten(keys, false, false);
         var index = keys.length;
+        // 必须传入函数名
         if (index < 1) throw new Error('bindAll must be passed function names');
+        // 依次将某些函数永久绑定在obj上
         while (index--) {
             var key = keys[index];
             obj[key] = _.bind(obj[key], obj);
@@ -1125,19 +1179,29 @@
     });
 
     // Memoize an expensive function by storing its results.
+
+    // 缓存函数，可运用于大量重复运算的情况，大大提高效率
+    // 运用闭包
     _.memoize = function(func, hasher) {
         var memoize = function(key) {
+            // 创建一个缓存，在 memoize 函数上
             var cache = memoize.cache;
+            // hasher是用来处理存储在cache中key的处理函数，如果有就使用，没有就是用每个传到memoize中的key作为cache中的唯一key
             var address = '' + (hasher ? hasher.apply(this, arguments) : key);
+            // 判断cache中有没有address，有则直接返回，没有先执行，在存储，再返回
             if (!_.has(cache, address)) cache[address] = func.apply(this, arguments);
             return cache[address];
         };
+        // 定义缓存空间
         memoize.cache = {};
+        // 返回memoize
         return memoize;
     };
 
     // Delays a function for the given number of milliseconds, and then calls
     // it with the arguments supplied.
+
+    // 延迟wait时间后执行函数，并把wait之后的所有参数都传到func中
     _.delay = restArgs(function(func, wait, args) {
         return setTimeout(function() {
             return func.apply(null, args);
@@ -1146,6 +1210,8 @@
 
     // Defers a function, scheduling it to run after the current call stack has
     // cleared.
+
+    // 延时1ms执行，使用_代替了func
     _.defer = _.partial(_.delay, _, 1);
 
     // Returns a function, that, when invoked, will only be triggered at most once
@@ -1153,38 +1219,67 @@
     // as much as it can, without ever going more than once per `wait` duration;
     // but if you'd like to disable the execution on the leading edge, pass
     // `{leading: false}`. To disable execution on the trailing edge, ditto.
-    _.throttle = function(func, wait, options) {
-        var timeout, context, args, result;
-        var previous = 0;
-        if (!options) options = {};
 
+    // 节流：每隔一段时间执行一次，控制执行次数，优化卡顿
+    // 要是我做的话，我会给一个开关来控制节流，感觉这样好麻烦.... 
+    _.throttle = function(func, wait, options) {
+        // 声明定时器、环境上下文、参数、func的结果
+        // 闭包
+        var timeout, context, args, result;
+        // 上一次执行的时间点
+        var previous = 0;
+        // 如果options没有，则设置为{}，其中的leading决定是否执行第一次，false为不执行
+        if (!options) options = {};
+        // 定时器执行的函数
         var later = function() {
+            // leading为false的话,previous为0
             previous = options.leading === false ? 0 : _.now();
+            // 清空定时器
             timeout = null;
+            // 执行func
             result = func.apply(context, args);
+            // 如果定时器被清空，那么重置context和args
             if (!timeout) context = args = null;
         };
-
+        // 节流函数主体逻辑
         var throttled = function() {
+            // 当前时间
             var now = _.now();
+            // 如果上一次的时间点为0，并且leading为false，那么上一次执行的点等于现在
             if (!previous && options.leading === false) previous = now;
+            // 设置函数下一次执行的等待时间
+            // 用户设定的wait - (now - previous)
+            // 如果不设置leading那么remaining <= 0
+            // 如果设置了那么remaining = wait
             var remaining = wait - (now - previous);
+            // 获取当前执行环境上下文，因为下面定时器内有用到
             context = this;
+            // 获取参数列表
             args = arguments;
+            // 下面两个if只要不指定leading都会走进，并且remaining第一次是负值，所以在第一个if中清楚了定时器
+            // 下面两个都各自实现了节流，不过具体处理的功能不同
+            //
+            // 如果等待时间小于等于0 或者 等待时间大于指定的wait
+            // 这里为了第一次是否立刻执行
             if (remaining <= 0 || remaining > wait) {
+                // 如果定时器存在，就清除定时器，并清空timeout
                 if (timeout) {
                     clearTimeout(timeout);
                     timeout = null;
                 }
+                // 直接执行
                 previous = now;
                 result = func.apply(context, args);
                 if (!timeout) context = args = null;
+            // 如果指定了trailing为false，那么最后一次不会调用这里，也就不会执行最后一次了
+            // 这一块只有最后一次不执行的时候才会用到
             } else if (!timeout && options.trailing !== false) {
+                // 这里的remaining第一次为负数，只有指定leading才会为正数，因为leading为false的时候previous会被设置为now
                 timeout = setTimeout(later, remaining);
             }
             return result;
         };
-
+        // 停止节流函数执行，省了空间
         throttled.cancel = function() {
             clearTimeout(timeout);
             previous = 0;
@@ -1195,30 +1290,44 @@
     };
 
     // Returns a function, that, as long as it continues to be invoked, will not
-    // be triggered. The function will be called after it stops being called for
+    // be triggered（触发）. The function will be called after it stops being called for
     // N milliseconds. If `immediate` is passed, trigger the function on the
     // leading edge, instead of the trailing.
+
+    // 补充医疗保险
+    // 定时器会从1开始递增，即使clear之后定时器的返回值也不会改变
+    // 
+    // 防抖，只会在事件频繁触发后执行一次
+    // 如果immediate为true，那么先调用，在wait时间内不会重复触发（相当于一个在前，一个在后
     _.debounce = function(func, wait, immediate) {
         var timeout, result;
-
+        // 定时器用到的函数
         var later = function(context, args) {
             timeout = null;
+            // 只有args不为空的时候才会执行，所以仅仅用于正常流程（也就是之后执行
             if (args) result = func.apply(context, args);
         };
-
+        // 返回函数，更简洁了
         var debounced = restArgs(function(args) {
+            // 如果定时器存在，那么每次都先清空定时器
             if (timeout) clearTimeout(timeout);
+            // 如果需要在之前触发
             if (immediate) {
+                // 只有当timeout设置为null的时候，callNow才为真
                 var callNow = !timeout;
+                // 用来将timeout设置为null
+                // 没有穿later的第二个参数，所以只会在wait秒后把timeout设为null，这样下次就会先执行函数
                 timeout = setTimeout(later, wait);
+                // 如果callNow为真，直接调用
                 if (callNow) result = func.apply(this, args);
             } else {
+                // 如果在之后触发，就正常一个延时wait时间
                 timeout = _.delay(later, wait, this, args);
             }
 
             return result;
         });
-
+        // 取消得啦
         debounced.cancel = function() {
             clearTimeout(timeout);
             timeout = null;
@@ -1230,6 +1339,9 @@
     // Returns the first function passed as an argument to the second,
     // allowing you to adjust arguments, run code before and after, and
     // conditionally execute the original function.
+
+    // 运用partial，反转wrap传的参数
+    // 这样就把func传wrapper中了
     _.wrap = function(func, wrapper) {
         return _.partial(wrapper, func);
     };
@@ -1245,6 +1357,8 @@
 
     // Returns a function that is the composition of a list of functions, each
     // consuming the return value of the function that follows.
+
+    // 
     _.compose = function() {
         var args = arguments;
         var start = args.length - 1;

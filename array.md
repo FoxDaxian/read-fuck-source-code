@@ -1,4 +1,4 @@
-### Collection Functions
+### Array Functions
 
 -------
 

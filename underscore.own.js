@@ -193,6 +193,7 @@
 
     // An internal function for creating a new object that inherits from another.
 
+
     // 创建一个继承自prototype的对象
     var baseCreate = function(prototype) {
         // 如果prototype不是对象，返回一个空对象
@@ -206,6 +207,9 @@
         Ctor.prototype = null;
         return result;
     };
+
+    // 继承自，这个方法别写了，我自己写着玩的...
+    _.extendfrom = baseCreate
 
     // 闭包，存储了key，返回一个函数，接受一个obj，不为空则返回obj[key]
     //  '浅获取'
@@ -1084,10 +1088,6 @@
 
     // 确认是以构造函数执行还是普通函数
     // 
-    // 补充医疗保险： instanceof 深入剖析，可以参考这个：
-    // #https://www.ibm.com/developerworks/cn/web/1306_jiangjj_jsinstanceof/index.html
-    // #http://www.cnblogs.com/fool/archive/2010/10/14/1850910.html
-    // 
     // instanceof检测对象A的__proto__在不在B的prototype上，在类似递归那样一直在原型链上寻找
     // 注意：当构造函数的 prototype 为 null 的时候，实例对象 instanceof 构造函数会报错
     //
@@ -1294,9 +1294,6 @@
     // N milliseconds. If `immediate` is passed, trigger the function on the
     // leading edge, instead of the trailing.
 
-    // 补充医疗保险
-    // 定时器会从1开始递增，即使clear之后定时器的返回值也不会改变
-    // 
     // 防抖，只会在事件频繁触发后执行一次
     // 如果immediate为true，那么先调用，在wait时间内不会重复触发（相当于一个在前，一个在后
     _.debounce = function(func, wait, immediate) {
@@ -1425,7 +1422,7 @@
         'propertyIsEnumerable', 'hasOwnProperty', 'toLocaleString'
     ];
 
-    // 处理bug
+    // 处理ie下可枚举属性的bug
     var collectNonEnumProps = function(obj, keys) {
         var nonEnumIdx = nonEnumerableProps.length;
         var constructor = obj.constructor;
@@ -1454,7 +1451,7 @@
         if (nativeKeys) return nativeKeys(obj);
         var keys = [];
         for (var key in obj)
-            // 如果obj(非prototype)上有key属性，那么添加到 keys 结果数组红
+            // 如果obj(非prototype)上有key属性，那么添加到 keys 结果数组中
             if (_.has(obj, key)) keys.push(key);
         // Ahem, IE < 9.
         if (hasEnumBug) collectNonEnumProps(obj, keys);
@@ -1475,7 +1472,7 @@
 
     // Retrieve the values of an object's properties.
 
-    // 获取obj的所有value
+    // 获取obj的所有value，不包括原型链
     _.values = function(obj) {
         var keys = _.keys(obj);
         var length = keys.length;
@@ -1488,11 +1485,16 @@
 
     // Returns the results of applying the iteratee to each element of the object.
     // In contrast to _.map it returns an object.
+
+    // 用指定的 iteratee 处理 obj 上的每一个key对应的value
     _.mapObject = function(obj, iteratee, context) {
+        // 无敌大法
         iteratee = cb(iteratee, context);
+        // 获取obj上的keys
         var keys = _.keys(obj),
             length = keys.length,
-            results = {};
+            results = {}; // 结果对象
+        // 将所有key对应的值用迭代方法处理，并赋给results
         for (var index = 0; index < length; index++) {
             var currentKey = keys[index];
             results[currentKey] = iteratee(obj[currentKey], currentKey, obj);
@@ -1502,6 +1504,8 @@
 
     // Convert an object into a list of `[key, value]` pairs.
     // The opposite of _.object.
+
+    // 将对象的键值对转换成数组，并以二维数组的形式返回
     _.pairs = function(obj) {
         var keys = _.keys(obj);
         var length = keys.length;
@@ -1527,6 +1531,10 @@
 
     // Return a sorted list of the function names available on the object.
     // Aliased as `methods`.
+
+    // 补充医疗保险：Object.keys()  for in 等类似这样的 会获取对象上的自身属性，包括原型链上的属性么??
+    // 
+    // 获取对象上所有值是方法的key，并返回，包括原型链
     _.functions = _.methods = function(obj) {
         var names = [];
         for (var key in obj) {
@@ -1554,6 +1562,7 @@
                 for (var i = 0; i < l; i++) {
                     var key = keys[i];
                     // 进行判断并填充或覆盖
+                    // defaults为true，则没有才会赋
                     if (!defaults || obj[key] === void 0) obj[key] = source[key];
                 }
             }
@@ -1588,41 +1597,64 @@
     };
 
     // Internal pick helper function to determine if `obj` has key `key`.
+
+    // 补充医疗保险：key in obj 涉及原型链吗？
+    // 
+    // 看看key在不在obj上，第一个参数为了少写点代码
     var keyInObj = function(value, key, obj) {
         return key in obj;
     };
 
     // Return a copy of the object only containing the whitelisted properties.
+
+    // 该函数在参数上分为两种情况，传断言和不传断言
+    // 找到obj上符合用户指定断言的key，或者找到in obj上的key
     _.pick = restArgs(function(obj, keys) {
         var result = {},
             iteratee = keys[0];
+        // obj为空，则返回{}
         if (obj == null) return result;
+        // 下面分为两种情况，第二个参数为函数的情况，则用该函数作为断言
+        // 不为函数的情况，用keyInObj作为断言
+        // 如果keys第一个是函数的话
         if (_.isFunction(iteratee)) {
+            // keys 第一个为处理函数，第二个为执行环境上下文
             if (keys.length > 1) iteratee = optimizeCb(iteratee, keys[1]);
+            // 重新设置keys为obj上的全部key，这样就可以用用户定义的断言来判断obj上所有的key的值了
             keys = _.allKeys(obj);
+        // 否则不是函数的话
         } else {
+            // 重设iteratee，返回key in obj
             iteratee = keyInObj;
+            // 扁平化keys
             keys = flatten(keys, false, false);
+            // 对象化
             obj = Object(obj);
         }
         for (var i = 0, length = keys.length; i < length; i++) {
             var key = keys[i];
             var value = obj[key];
+            // 判断是否通过断言
             if (iteratee(value, key, obj)) result[key] = value;
         }
         return result;
     });
 
     // Return a copy of the object without the blacklisted properties.
+
+    // 与_.pick相反
     _.omit = restArgs(function(obj, keys) {
         var iteratee = keys[0],
             context;
         if (_.isFunction(iteratee)) {
+            // 用户传递函数的情况，使用negate反转断言结果
             iteratee = _.negate(iteratee);
             if (keys.length > 1) context = keys[1];
         } else {
+            // 扁平化keys，并且将每个key都字符串化
             keys = _.map(flatten(keys, false, false), String);
             iteratee = function(value, key) {
+                // 取反
                 return !_.contains(keys, key);
             };
         }
@@ -1637,21 +1669,34 @@
     // Creates an object that inherits from the given prototype object.
     // If additional properties are provided then they will be added to the
     // created object.
+
+    // 创造一个原型为prototype，对象内容为props的对象
     _.create = function(prototype, props) {
+        // 创造一个继承自prototype的实例对象，该对象为空
         var result = baseCreate(prototype);
+        // 将props非原型链上的属性，填充到result上
         if (props) _.extendOwn(result, props);
         return result;
     };
 
     // Create a (shallow-cloned) duplicate of an object.
+
+    // 补充医疗保险：浅拷贝深拷贝，以及传址和传值的定义和区别，参考这里：#https://github.com/wengjq/Blog/issues/3
+    // 为什么正则表达式、函数等类型无法进行深拷贝，并且会丢失相应的值？？？
+    // 
+    // 创造一个浅拷贝的对象副本，浅拷贝只是复制一层，之前理解错了
     _.clone = function(obj) {
+        // 不是对象就返回
         if (!_.isObject(obj)) return obj;
+        // 分为数组和对象两种情况
         return _.isArray(obj) ? obj.slice() : _.extend({}, obj);
     };
 
     // Invokes interceptor with the obj, and then returns obj.
     // The primary purpose of this method is to "tap into" a method chain, in
     // order to perform operations on intermediate results within the chain.
+
+    // 拦截器
     _.tap = function(obj, interceptor) {
         interceptor(obj);
         return obj;
@@ -1676,61 +1721,125 @@
         return true;
     };
 
-
+    // 补充医疗保险：
+    // 1：为什么 '0' == false 为真，但是if中却可以通过：#https://stackoverflow.com/questions/7615214/in-javascript-why-is-0-equal-to-false-but-when-tested-by-if-it-is-not-fals
+    // 2: 为什么会有 +0 和 -1 以及为什么 0 === -0 为true ？？？ 下面的链接
+    // #http://www.cnblogs.com/ziyunfei/archive/2012/12/10/2777099.html 
+    // #https://stackoverflow.com/questions/7223359/are-0-and-0-the-same => 被js引擎可以藏起来的0之前的符号
+    // 3：Number(null) => 0，Number(undefined) => NaN
+    // 为什么 0 == null 是 false 参考：https://www.zhihu.com/question/52666420 => '=='没有做针对null的情况
+    // 为什么 0 >= null || null >= 0为真，参考：http://blog.csdn.net/lee_magnum/article/details/11181271
+    // 两个猜测答案：
+    // '>'会处理null的情况，并进行Number(null)，隐式类型转换操作
+    // 进行大小比较的时候null >= 0 会取反向结果来验证的，也就是  null < 0，这时不会进行转换，所以返回false，所以那边返回true
+    // 4：不算鸡汤的鸡汤：
+    // 学习精神可嘉！
+    // 有时候没有必要纠结这些，因为这种东西记得越多，你学习其它语言越困难。以下：
+    // JS：""==0 返回true
+    // Ruby：""==0 返回false
+    // 
+    // 
     // Internal recursive comparison function for `isEqual`.
+    // 递归比较函数
+
+    // 
     var eq, deepEq;
     eq = function(a, b, aStack, bStack) {
         // Identical objects are equal. `0 === -0`, but they aren't identical.
-        // See the [Harmony `egal` proposal](http://wiki.ecmascript.org/doku.php?id=harmony:egal).
+        // 相同的对象时相等的，0 === -0 为真，但是他们不等
+        // 二进制 => 十进制
+        // 0010 => +2
+        // 1010 => -2
+        // 那么：
+        // 0000 => +0
+        // 1000 => -0
+        // 可以根据 number / 0(-0)的结果 (-)Infinity来判断是 +0 还是 -0
+
+
+        // 如果a === b 那么a 或者 b 不为 NaN
+        // 如果a !== 0 那么肯定为真
+        // 如果a === 0，那么根据 1 / 0 || 1 / -0 来判断b是 +0 还是 -0
         if (a === b) return a !== 0 || 1 / a === 1 / b;
         // `null` or `undefined` only equal to itself (strict comparison).
+        // null 和 undefined 只等于自身，所以如果能到这个if，说明只有一个为null/undefined
         if (a == null || b == null) return false;
         // `NaN`s are equivalent, but non-reflexive.
+        // 判断是不是NaN
         if (a !== a) return b !== b;
         // Exhaust primitive checks
         var type = typeof a;
+        // 如果 不等于函数 && 不等于对象 && b的类型不是对象，那么上面会被截取到，如果还能到这一步，那么肯定不相同
         if (type !== 'function' && type !== 'object' && typeof b != 'object') return false;
+        // 深度比较
         return deepEq(a, b, aStack, bStack);
     };
 
     // Internal recursive comparison function for `isEqual`.
     deepEq = function(a, b, aStack, bStack) {
         // Unwrap any wrapped objects.
+        // 这种情况用于比较直接调用_()的情况
         if (a instanceof _) a = a._wrapped;
         if (b instanceof _) b = b._wrapped;
         // Compare `[[Class]]` names.
+        // 就是toString方法
         var className = toString.call(a);
+        // 如果toString的值不同则返回false
         if (className !== toString.call(b)) return false;
+        // 如果上面两者不相同，那么进行以下比对
+        // 没有处理array的情况
         switch (className) {
             // Strings, numbers, regular expressions, dates, and booleans are compared by value.
+
+            // 字符串，数字，正则，时间，布尔值通过value比较
             case '[object RegExp]':
                 // RegExps are coerced to strings for comparison (Note: '' + /a/i === '/a/i')
             case '[object String]':
                 // Primitives and their corresponding object wrappers are equivalent; thus, `"5"` is
                 // equivalent to `new String("5")`.
+
+                // 通过字符串化进行比较
+                // '' => 转换为 字符串
                 return '' + a === '' + b;
             case '[object Number]':
                 // `NaN`s are equivalent, but non-reflexive.
                 // Object(NaN) is equivalent to NaN.
+
+                // 判断NaN
                 if (+a !== +a) return +b !== +b;
                 // An `egal` comparison is performed for other numeric values.
+
+                // 如果a === 0，那么判断正负0的情况，否则直接判断
                 return +a === 0 ? 1 / +a === 1 / b : +a === +b;
             case '[object Date]':
             case '[object Boolean]':
                 // Coerce dates and booleans to numeric primitive values. Dates are compared by their
                 // millisecond representations. Note that invalid dates with millisecond representations
                 // of `NaN` are not equivalent.
+
+                // 通过+获取时间和布尔值得原始值，在进行比较 
+                // +会隐式转换为数字               
                 return +a === +b;
             case '[object Symbol]':
+                // 如果是Symbol，那么就比较valueOf
+                // 这里永远会返回false吧？？
+                // 这里是不是要用 toString
                 return SymbolProto.valueOf.call(a) === SymbolProto.valueOf.call(b);
         }
 
+        // 数组的情况下
         var areArrays = className === '[object Array]';
+        // 不是数组，就是对象或者函数？
         if (!areArrays) {
+            // 都不是对象肯定返回false，因为上面处理过了都，感觉可有可无，会有什么万一呢
             if (typeof a != 'object' || typeof b != 'object') return false;
 
             // Objects with different constructors are not equivalent, but `Object`s or `Array`s
             // from different frames are.
+
+            // 函数处理部分
+            // 不同构造函数的对象是不同的，但是如果具有相同的构造函数，却来自不同的iframes也会不同
+            // 经过测试,如果是对象的话，那么aCtor instanceof aCtor肯定返回false，取反，那么就是true了
+            // 不过为啥不能用false代替aCtor instanceof aCtor呢...
             var aCtor = a.constructor,
                 bCtor = b.constructor;
             if (aCtor !== bCtor && !(_.isFunction(aCtor) && aCtor instanceof aCtor &&
@@ -1742,14 +1851,17 @@
         // Assume equality for cyclic structures. The algorithm for detecting cyclic
         // structures is adapted from ES 5.1 section 15.12.3, abstract operation `JO`.
 
-        // Initializing stack of traversed objects.
+        // Initializing stack(堆) of traversed objects.
         // It's done here since we only need them for objects and arrays comparison.
+
+        // 处理对象和数组的情况
         aStack = aStack || [];
         bStack = bStack || [];
         var length = aStack.length;
         while (length--) {
             // Linear search. Performance is inversely proportional to the number of
             // unique nested structures.
+
             if (aStack[length] === a) return bStack[length] === b;
         }
 
@@ -1758,24 +1870,31 @@
         bStack.push(b);
 
         // Recursively compare objects and arrays.
+        // 如果是数组
         if (areArrays) {
             // Compare array lengths to determine if a deep comparison is necessary.
             length = a.length;
+            // 先根据长度来比较
             if (length !== b.length) return false;
             // Deep compare the contents, ignoring non-numeric properties.
             while (length--) {
+                // 递归比较
                 if (!eq(a[length], b[length], aStack, bStack)) return false;
             }
+        // 如果是对象
         } else {
             // Deep compare objects.
+            // 获取keys
             var keys = _.keys(a),
                 key;
             length = keys.length;
             // Ensure that both objects contain the same number of properties before comparing deep equality.
+            // 根据长度来比较
             if (_.keys(b).length !== length) return false;
             while (length--) {
                 // Deep compare each member
                 key = keys[length];
+                // 递归
                 if (!(_.has(b, key) && eq(a[key], b[key], aStack, bStack))) return false;
             }
         }
@@ -1786,19 +1905,28 @@
     };
 
     // Perform a deep comparison to check if two objects are equal.
+
+    // 深度比较两个对象是否相同
     _.isEqual = function(a, b) {
         return eq(a, b);
     };
 
     // Is a given array, string, or object empty?
     // An "empty" object has no enumerable own-properties.
+
+    // 判断是否为空
     _.isEmpty = function(obj) {
+        // 为空 
         if (obj == null) return true;
+        // 类数组长度/字符串判断
         if (isArrayLike(obj) && (_.isArray(obj) || _.isString(obj) || _.isArguments(obj))) return obj.length === 0;
+        // 对象的话判断key的长度，不包括原型链
         return _.keys(obj).length === 0;
     };
 
     // Is a given value a DOM element?
+
+    // 判断是不是元素，只有nodeType为1的时候才是元素
     _.isElement = function(obj) {
         return !!(obj && obj.nodeType === 1);
     };
@@ -1833,8 +1961,8 @@
     // Define a fallback version of the method in browsers (ahem, IE < 9), where
     // there isn't any inspectable "Arguments" type.
 
-    // 兼容版本，如果toString.call(obj)不返回预期[object Callee]，那么则需要判断obj上有没有callee
-    // 这里虽然对象可以写上callee，但是谁又会这么无聊呢....
+    // 兼容版本，如果toString.call(obj)不返回预期[object Callee]，那么则需要判断obj上有没有callee，兼容ie9以下
+    // 这里虽然obj可以写上callee，但是谁又会这么无聊呢....
     if (_.isArguments(arguments)) {
         _.isArguments = function(obj) {
             return _.has(obj, 'callee');
@@ -1856,26 +1984,36 @@
     }
 
     // Is a given object a finite number?
+
+    // 判断是不是一个有限的对象
     _.isFinite = function(obj) {
         return !_.isSymbol(obj) && isFinite(obj) && !isNaN(parseFloat(obj));
     };
 
     // Is the given value `NaN`?
+
+    // 判断是不是NaN
     _.isNaN = function(obj) {
         return _.isNumber(obj) && isNaN(obj);
     };
 
     // Is a given value a boolean?
+
+    // 是不是一个布尔值
     _.isBoolean = function(obj) {
         return obj === true || obj === false || toString.call(obj) === '[object Boolean]';
     };
 
     // Is a given value equal to null?
+
+    // 是不是 null
     _.isNull = function(obj) {
         return obj === null;
     };
 
     // Is a given variable undefined?
+
+    // 是不是 undefined
     _.isUndefined = function(obj) {
         return obj === void 0;
     };
@@ -1883,6 +2021,17 @@
     // Shortcut function for checking if an object has a given property directly
     // on itself (in other words, not on a prototype).
 
+    // 补充医疗保险：函数的参数是怎么接受参数的？？？比如一下这种情况，会怎么样
+    // var obj = {
+        //     name: 1
+        // }
+        // function fn(arg) {
+        //     arg = 1
+        //     console.log(arg);
+        // }
+        // fn(obj)
+        // console.log(obj);
+    // 
     // 判断obj上有没有path这个key，不包括obj.prototype上的
     _.has = function(obj, path) {
         // 如果path不是数组，并且obj存在，则直接调用hasOwnProperty
@@ -1896,6 +2045,7 @@
             if (obj == null || !hasOwnProperty.call(obj, key)) {
                 return false;
             }
+            // 为了只能判断一次，之后obj就被覆盖了
             obj = obj[key];
         }
         return !!length;

@@ -1,4 +1,4 @@
-### Collection Functions
+### Function Functions
 
 -------
 
@@ -43,8 +43,28 @@ var executeBound = function(sourceFunc, boundFunc, context, callingContext, args
 
 ### '补充医疗保险'
 
-- 该写这里了
-- 写一下目前状况下，我对北漂的一个看法和总结
+- instanceof：[参考链接1](https://www.ibm.com/developerworks/cn/web/1306_jiangjj_jsinstanceof/index.html)、[参考链接2](http://www.cnblogs.com/fool/archive/2010/10/14/1850910.html)
+```javascript
+    // instanceof会沿着原型链找，如果相同在是该构造函数的实例
+    // 不过对原型链为null的构造函数使用，会报错，例如
+    function Person () {}
+    Person.prototype = null
+    var person = new Person()
+    console.log(person instanceof Person)
+    // 报错
+    // Uncaught TypeError: Function has non-object prototype 'null' in instanceof check at Function.[Symbol.hasInstance] (<anonymous>)
+```
+- 定时器tips
+```javascript
+    // 每个定时器都会返回一个唯一的ID，从1开始递增（不过不一定都是从1开始）
+    // 可以通过返回的ID来清除对应的定时器，比如
+    var st = setTimeout(function() {
+        // do someThing
+    }, 1000)
+    clearTimeout(st)
+    // 如果你知道定时器会返回什么ID，甚至可以直接传该ID，谷歌浏览器下st会1
+    clearTimeout(1)
+```
 
 
 

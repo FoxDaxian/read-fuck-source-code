@@ -22,7 +22,7 @@ Hope has a good ending!!
 - <a href="./collections.md">Collection Functions</a>
 - <a href="./array.md">Array Functions</a>
 - <a href="./functions.md">Function (ahem) Functions</a>
-- Object Functions
+- <a href="./objects.md">Object Functions</a>
 
 
 

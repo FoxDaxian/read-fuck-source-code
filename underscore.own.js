@@ -1532,8 +1532,6 @@
     // Return a sorted list of the function names available on the object.
     // Aliased as `methods`.
 
-    // 补充医疗保险：Object.keys()  for in 等类似这样的 会获取对象上的自身属性，包括原型链上的属性么??
-    // 
     // 获取对象上所有值是方法的key，并返回，包括原型链
     _.functions = _.methods = function(obj) {
         var names = [];
@@ -1598,8 +1596,6 @@
 
     // Internal pick helper function to determine if `obj` has key `key`.
 
-    // 补充医疗保险：key in obj 涉及原型链吗？
-    // 
     // 看看key在不在obj上，第一个参数为了少写点代码
     var keyInObj = function(value, key, obj) {
         return key in obj;
@@ -1681,9 +1677,6 @@
 
     // Create a (shallow-cloned) duplicate of an object.
 
-    // 补充医疗保险：浅拷贝深拷贝，以及传址和传值的定义和区别，参考这里：#https://github.com/wengjq/Blog/issues/3
-    // 为什么正则表达式、函数等类型无法进行深拷贝，并且会丢失相应的值？？？
-    // 
     // 创造一个浅拷贝的对象副本，浅拷贝只是复制一层，之前理解错了
     _.clone = function(obj) {
         // 不是对象就返回
@@ -1721,24 +1714,6 @@
         return true;
     };
 
-    // 补充医疗保险：
-    // 1：为什么 '0' == false 为真，但是if中却可以通过：#https://stackoverflow.com/questions/7615214/in-javascript-why-is-0-equal-to-false-but-when-tested-by-if-it-is-not-fals
-    // 2: 为什么会有 +0 和 -1 以及为什么 0 === -0 为true ？？？ 下面的链接
-    // #http://www.cnblogs.com/ziyunfei/archive/2012/12/10/2777099.html 
-    // #https://stackoverflow.com/questions/7223359/are-0-and-0-the-same => 被js引擎可以藏起来的0之前的符号
-    // 3：Number(null) => 0，Number(undefined) => NaN
-    // 为什么 0 == null 是 false 参考：https://www.zhihu.com/question/52666420 => '=='没有做针对null的情况
-    // 为什么 0 >= null || null >= 0为真，参考：http://blog.csdn.net/lee_magnum/article/details/11181271
-    // 两个猜测答案：
-    // '>'会处理null的情况，并进行Number(null)，隐式类型转换操作
-    // 进行大小比较的时候null >= 0 会取反向结果来验证的，也就是  null < 0，这时不会进行转换，所以返回false，所以那边返回true
-    // 4：不算鸡汤的鸡汤：
-    // 学习精神可嘉！
-    // 有时候没有必要纠结这些，因为这种东西记得越多，你学习其它语言越困难。以下：
-    // JS：""==0 返回true
-    // Ruby：""==0 返回false
-    // 
-    // 
     // Internal recursive comparison function for `isEqual`.
     // 递归比较函数
 
@@ -2021,17 +1996,6 @@
     // Shortcut function for checking if an object has a given property directly
     // on itself (in other words, not on a prototype).
 
-    // 补充医疗保险：函数的参数是怎么接受参数的？？？比如一下这种情况，会怎么样
-    // var obj = {
-        //     name: 1
-        // }
-        // function fn(arg) {
-        //     arg = 1
-        //     console.log(arg);
-        // }
-        // fn(obj)
-        // console.log(obj);
-    // 
     // 判断obj上有没有path这个key，不包括obj.prototype上的
     _.has = function(obj, path) {
         // 如果path不是数组，并且obj存在，则直接调用hasOwnProperty

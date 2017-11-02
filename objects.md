@@ -204,6 +204,3 @@ var createAssigner = function(keysFunc, defaults) {
     JS："" == 0 返回true    
     Ruby："" == 0 返回false    
     根据个人情况来定就好了
-
-
-

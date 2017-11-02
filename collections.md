@@ -88,5 +88,5 @@
 
 ### '补充医疗保险'
 
-- 使用```JSON.parse(JSON.stringify(obj))```深拷贝（不复制引用）的时候，对象中value为```Function```或者```undefined```的会被忽略
+- 使用```JSON.parse(JSON.stringify(obj))```深拷贝（不复制引用）的时候，对象中value为```Function```或者```undefined```等会被忽略
 - ```underscore```中的所有```guard``参数都是为了保护当前函数的尊严，如果你想让该函数做好自己，那么请设置其为true

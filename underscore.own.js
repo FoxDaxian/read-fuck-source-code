@@ -2322,7 +2322,7 @@
 
     // Add a "chain" function. Start chaining a wrapped Underscore object.
 
-    // 是否支持链式操作，这样之后在chainResult (1675行) 中才能链式操作
+    // 是否支持链式操作，这样之后在chainResult (2348行) 中才能链式操作
     _.chain = function(obj) {
         var instance = _(obj);
         // 设置为true

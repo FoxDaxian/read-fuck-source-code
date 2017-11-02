@@ -65,7 +65,3 @@ var executeBound = function(sourceFunc, boundFunc, context, callingContext, args
     // 如果你知道定时器会返回什么ID，甚至可以直接传该ID，谷歌浏览器下st会1
     clearTimeout(1)
 ```
-
-
-
-

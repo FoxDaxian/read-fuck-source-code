@@ -87,4 +87,4 @@ var cb = function(value, context, argCount) {
 
 ### '补充医疗保险'
 
-1. 注意：obj[key]这里的key会执行toString方法，obj[[['name']]] => obj['name']
+1. 注意：obj[key]这里的key会执行'toString'方法，obj[[['name']]] => obj['name']

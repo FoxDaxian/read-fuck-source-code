@@ -23,6 +23,7 @@ Hope has a good ending!!
 - <a href="./array.md">Array Functions</a>
 - <a href="./functions.md">Function (ahem) Functions</a>
 - <a href="./objects.md">Object Functions</a>
+- <a href="./someCase.md">人生价值的自我实现</a>
 - [es2017语言规范](http://www.ecma-international.org/ecma-262/8.0/)
 - 补充医疗保险对我来说太重要了...虽然不怎么生病，但是看病之后真心省钱
 

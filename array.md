@@ -151,7 +151,3 @@ function BinarySearch(srcArray, des) {
     + NaN不大于、等于、小于任何值
     + NaN不可配置，不可写，但是在ES3中可以被改变，但是最好不要覆盖
     + 可以用parseInt()代替NaN，防止被重写
-
-
-
-
